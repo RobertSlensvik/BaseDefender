@@ -23,7 +23,7 @@ class Player extends Entity {
         super(scene, x, y, 'player');
         this.maxHP = 100;
         this.hp = 100;
-        this.speed = 400;
+        this.speed = 800;
         this.create();
     }
 
@@ -84,13 +84,16 @@ class Base extends Entity {
         this.sprite.setAlpha(1);
         this.sprite.setDepth(10);
 
-        // Create a separate static physics zone as hitbox
+        // Add a static physics body directly to the base sprite and use it as the hit zone
         let bw = (this.sprite.displayWidth || this.sprite.width) * 0.6;
         let bh = (this.sprite.displayHeight || this.sprite.height) * 0.6;
-        this.hitZone = this.scene.add.zone(this.sprite.x, this.sprite.y, bw, bh).setOrigin(0.5);
-        this.scene.physics.add.existing(this.hitZone, true);
-        this.hitZone.body.setSize(bw, bh);
-        this.hitZone.body.immovable = true;
+        this.scene.physics.add.existing(this.sprite, true);
+        if (this.sprite.body) {
+            this.sprite.body.setSize(bw, bh);
+            this.sprite.body.immovable = true;
+        }
+        // Use the sprite itself as the hitZone so overlaps target the visible base
+        this.hitZone = this.sprite;
 
         // Watchdog to check if base is still valid
         setTimeout(() => {
@@ -119,11 +122,12 @@ class Base extends Entity {
             if (this.hitZone && this.hitZone.body) {
                 const bw = (this.sprite.displayWidth || this.sprite.width) * 0.6;
                 const bh = (this.sprite.displayHeight || this.sprite.height) * 0.6;
-                this.hitZone.setPosition(this.sprite.x, this.sprite.y);
-                this.hitZone.setSize(bw, bh);
+                // Update physics body size and ensure it's positioned around the sprite
                 this.hitZone.body.setSize(bw, bh);
-                this.hitZone.body.x = this.sprite.x - bw / 2;
-                this.hitZone.body.y = this.sprite.y - bh / 2;
+                if (this.hitZone.body.position) {
+                    this.hitZone.body.x = this.sprite.x - bw / 2;
+                    this.hitZone.body.y = this.sprite.y - bh / 2;
+                }
             }
         }
     }
