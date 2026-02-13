@@ -40,19 +40,34 @@ async function loadScoreboard(scene, textObj) {
     };
 
     let serverList = [];
+    // Try to load from Scoreboard.json file first
     try {
-        const res = await fetch('/scores');
+        const res = await fetch('./Scoreboard.json');
         if (res && res.ok) {
             let data = await res.json();
             if (!Array.isArray(data)) {
                 if (data && Array.isArray(data.scores)) data = data.scores;
                 else data = [];
             }
-            serverList = data.map(s => normalize(s, 'server')).filter(Boolean);
+            serverList = data.map(s => normalize(s, 'file')).filter(Boolean);
         }
     } catch (err) {
-        console.warn('Failed to fetch server scores:', err);
-        serverList = [];
+        console.warn('Failed to fetch Scoreboard.json:', err);
+        // Try legacy /scores endpoint as fallback
+        try {
+            const res = await fetch('/scores');
+            if (res && res.ok) {
+                let data = await res.json();
+                if (!Array.isArray(data)) {
+                    if (data && Array.isArray(data.scores)) data = data.scores;
+                    else data = [];
+                }
+                serverList = data.map(s => normalize(s, 'server')).filter(Boolean);
+            }
+        } catch (err2) {
+            console.warn('Failed to fetch server scores:', err2);
+            serverList = [];
+        }
     }
 
     // Load local scores saved when submit failed
