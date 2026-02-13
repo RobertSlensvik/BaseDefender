@@ -343,6 +343,13 @@ function createPauseMenuUI(scene) {
     resumeBtn.on('pointerdown', () => {
         gamePaused = false;
         pauseContainer.setVisible(false);
+        try {
+            if (scene && scene.physics && typeof scene.physics.resume === 'function') {
+                scene.physics.resume();
+            }
+        } catch (e) {
+            console.warn('Failed to resume physics on scene:', e);
+        }
     });
 
     // Controls button handler
@@ -450,6 +457,12 @@ function createMenuUI(scene) {
         controlsPanel.setVisible(false);
         startBtn.setVisible(true);
         controlsBtn.setVisible(true);
+        // Ensure scoreboard button returns when backing out of controls
+        try {
+            if (scoreboardBtn && typeof scoreboardBtn.setVisible === 'function') {
+                scoreboardBtn.setVisible(true);
+            }
+        } catch (e) {}
     });
     controlsPanel.add([panelBg, controlsTitle, controlsText, backBtn]);
 

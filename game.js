@@ -47,6 +47,8 @@ function preload() {
     this.load.image('enemy', 'assets/enemy.png');
     this.load.image('coin', 'assets/coin.png');
     this.load.image('base', 'assets/base.png');
+    // Use provided bullet image if present (fallback generation remains)
+    this.load.image('bullet', 'assets/bullet.png');
 }
 
 // ============== CREATE ==============
@@ -248,7 +250,7 @@ function shootProjectile(scene, pointer) {
         const bullet = projectiles.create(player.x, player.y, 'bullet');
         if (!bullet) continue;
         bullet.setDepth(20);
-        bullet.setScale(1);
+        bullet.setScale(0.05);
         if (bullet.body) {
             bullet.body.setCircle(5);
             bullet.body.collideWorldBounds = true;
