@@ -3,8 +3,8 @@
 
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: 1080,
+    height: 920,
     parent: 'game',
     scale: {
         mode: Phaser.Scale.RESIZE,
@@ -49,6 +49,7 @@ function preload() {
     this.load.image('base', 'assets/base.png');
     // Use provided bullet image if present (fallback generation remains)
     this.load.image('bullet', 'assets/bullet.png');
+    this.load.image('bakgrunn', 'assets/bakgrunn.png');
 }
 
 // ============== CREATE ==============
@@ -56,12 +57,21 @@ function preload() {
 function create() {
     currentScene = this;
 
-    // Background
-    background = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x2a2a3a).setOrigin(0).setDepth(-10);
-    this.cameras.main.setBackgroundColor(0x2a2a3a);
+    // Draw solid background color (e.g., dark blue) before image
+    this.cameras.main.setBackgroundColor('#1a2233');
+    // Background - use bakgrunn.png (1920x1080 fixed resolution)
+    // background = this.add.image(this.scale.width / 2, this.scale.height / 2, 'bakgrunn');
+    // background.setOrigin(0.5, 0.5);
+    // background.setDepth(-10);
+    // Scale to fit window while maintaining aspect ratio (show all, letterbox if needed)
+    // const scaleX = this.scale.width / 1920;
+    // const scaleY = this.scale.height / 1080;
+    // const scale = Math.min(scaleX, scaleY);
+    // background.setScale(scale);
 
-    // Create base entity
-    baseEntity = new Base(this, this.scale.width / 2, this.scale.height / 2);
+    // Create base entity (place at left side)
+    const baseLeftMargin = 80;
+    baseEntity = new Base(this, baseLeftMargin, this.scale.height / 2);
     base = baseEntity.sprite;
 
     // Create player entity
@@ -157,12 +167,17 @@ function create() {
         const h = window.innerHeight;
         if (w === this.scale.width && h === this.scale.height) return;
         this.scale.resize(w, h);
-        if (background) {
-            background.setSize(this.scale.width, this.scale.height);
-            background.setPosition(0, 0);
-        }
+        // if (background) {
+        //     // Recalculate scale to always fit the playing field
+        //     const scaleX = this.scale.width / 1920;
+        //     const scaleY = this.scale.height / 1080;
+        //     const scale = Math.min(scaleX, scaleY);
+        //     background.setScale(scale);
+        //     background.setPosition(this.scale.width / 2, this.scale.height / 2);
+        // }
         if (baseEntity) {
-            baseEntity.updatePosition(this.scale.width / 2, this.scale.height / 2);
+            const baseLeftMargin = 80;
+            baseEntity.updatePosition(baseLeftMargin, this.scale.height / 2);
         }
         if (player) {
             player.x = Phaser.Math.Clamp(player.x, 0, this.scale.width);
@@ -207,7 +222,8 @@ function update() {
     // Enemy movement toward base
     enemies.children.iterate(enemy => {
         if (enemy) {
-            currentScene.physics.moveToObject(enemy, baseEntity.sprite, 60);
+            const speed = enemy.speed || 60;
+            currentScene.physics.moveToObject(enemy, baseEntity.sprite, speed);
         }
     });
 }
@@ -216,12 +232,15 @@ function update() {
 
 function spawnWave(scene) {
     for (let i = 0; i < wave * 3; i++) {
-        const x = Phaser.Math.Between(0, scene.scale.width);
-        const y = -50;
+        // Spawn enemies off the right edge of the playing area
+        const x = scene.scale.width + Phaser.Math.Between(50, 150);
+        const y = Phaser.Math.Between(50, scene.scale.height - 50);
         const enemy = enemies.create(x, y, 'enemy');
         enemy.setScale(0.1);
         enemy.setDepth(20);
         enemy.hp = 40 + wave * 10;
+        // Give each enemy a speed that increases slightly with wave
+        enemy.speed = 60 + (wave - 1) * 10;
     }
 }
 
@@ -229,8 +248,18 @@ function shootProjectile(scene, pointer) {
     if (Date.now() < shootCooldown) return;
     shootCooldown = Date.now() + shootRate;
 
-    const targetX = pointer.worldX !== undefined ? pointer.worldX : pointer.x;
-    const targetY = pointer.worldY !== undefined ? pointer.worldY : pointer.y;
+    let targetX, targetY;
+    if (pointer.worldX !== undefined && pointer.worldY !== undefined) {
+        targetX = pointer.worldX;
+        targetY = pointer.worldY;
+    } else if (scene.cameras && scene.cameras.main && pointer.x !== undefined && pointer.y !== undefined) {
+        const worldPoint = scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        targetX = worldPoint.x;
+        targetY = worldPoint.y;
+    } else {
+        targetX = pointer.x;
+        targetY = pointer.y;
+    }
 
     // Determine number of shots: double at 10 coins, then +1 shot every 5 additional coins
     let shots = 1;
