@@ -94,7 +94,29 @@ async function loadScoreboard(scene, textObj) {
     // sort by score desc
     combined.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    const lines = combined.slice(0, 10).map((s, i) => {
+    // Find highest score from last patch/deploy
+    // Now: highest score overall
+    let highestScoreLastPatch = null;
+    if (combined.length > 0) {
+        highestScoreLastPatch = combined.reduce((max, s) => (s.score > max.score ? s : max), combined[0]);
+    }
+
+    // Get patch number from package.json
+    let patchNumber = 'unknown';
+    try {
+        const res = await fetch('./package.json');
+        if (res && res.ok) {
+            const pkg = await res.json();
+            patchNumber = pkg.version || 'unknown';
+        }
+    } catch (e) {}
+
+    const lines = [];
+    if (highestScoreLastPatch) {
+        lines.push(`Highest score patch ${patchNumber}: "${highestScoreLastPatch.score}" by ${highestScoreLastPatch.name}`);
+        lines.push('');
+    }
+    lines.push(...combined.slice(0, 5).map((s, i) => {
         const wavePart = s.wave ? ` (W${s.wave})` : '';
         const src =
             s.source === 'local' &&
@@ -102,7 +124,7 @@ async function loadScoreboard(scene, textObj) {
                 ? ' [local]'
                 : '';
         return `${i + 1}. ${s.name} — ${s.score}${wavePart}${src}`;
-    });
+    }));
 
     textObj.setText(lines.join('\n'));
 }
@@ -318,7 +340,7 @@ function createPauseMenuUI(scene) {
         .text(
             scene.scale.width / 2,
             scene.scale.height / 2 - 20,
-            'Move: WASD or Arrow keys\nShoot: SPACE\nMelee: E\nPause: ESC',
+            'Move: WASD or Arrow keys\nShoot: SPACE\nSpawn new wave: E\nPause: ESC',
             { fontSize: '20px', fill: '#ddd', align: 'center' }
         )
         .setOrigin(0.5);
@@ -440,7 +462,7 @@ function createMenuUI(scene) {
         .text(
             scene.scale.width / 2,
             scene.scale.height / 2 - 20,
-            'Move: WASD or Arrow keys\nShoot: SPACE\nMelee: E\nStart: ENTER or click Start Game',
+            'Move: WASD or Arrow keys\nShoot: SPACE\nSpawn new wave: E\nStart: ENTER or click Start Game',
             { fontSize: '20px', fill: '#ddd', align: 'center' }
         )
         .setOrigin(0.5);
