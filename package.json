@@ -1,0 +1,21 @@
+{
+  "name": "BaseDefender-server",
+  "version": "1.0.0",
+  "description": "Backend server for BaseDefender game - handles score persistence",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["game", "phaser", "tower-defense"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -104,11 +104,13 @@ function create() {
     this.input.keyboard.on('keydown-ESC', () => {
         if (gameStarted && !gamePaused) {
             gamePaused = true;
+            this.physics.pause();
             if (pauseMenuContainer) {
                 pauseMenuContainer.setVisible(true);
             }
         } else if (gameStarted && gamePaused) {
             gamePaused = false;
+            this.physics.resume();
             if (pauseMenuContainer) {
                 pauseMenuContainer.setVisible(false);
             }
