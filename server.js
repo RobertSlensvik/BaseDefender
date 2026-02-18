@@ -118,17 +118,18 @@ app.get('/scores', async (req, res) => {
 // POST /scores - Save a new score
 app.post('/scores', async (req, res) => {
     try {
-        const { name, score, wave } = req.body;
+        const { name, score, wave, game } = req.body;
 
         // Validate input
-        if (!name || typeof score !== 'number' || typeof wave !== 'number') {
+        if (!name || typeof score !== 'number') {
             return res.status(400).json({ error: 'Invalid score data' });
         }
 
         const newScore = {
             name: String(name).substring(0, 32),
             score: Number(score),
-            wave: Number(wave),
+            wave: wave ? Number(wave) : null,
+            game: game ? String(game) : 'basedefender',
             date: new Date().toISOString()
         };
 
