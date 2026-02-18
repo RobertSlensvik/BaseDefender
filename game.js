@@ -114,6 +114,7 @@ function create() {
 
     // Pause menu on ESC key
     this.input.keyboard.on('keydown-ESC', () => {
+        if (snakeActive) return; // Don't trigger if Snake is active
         if (gameStarted && !gamePaused) {
             gamePaused = true;
             this.physics.pause();
@@ -150,7 +151,7 @@ function create() {
     baseHPText.setDepth(100);
 
     // Create menu UI
-    menuContainer = createMenuUI(this);
+    showMainMenu(this);
 
     // Create pause menu UI (hidden by default)
     pauseMenuContainer = createPauseMenuUI(this);
@@ -195,6 +196,12 @@ function create() {
 // ============== UPDATE ==============
 
 function update() {
+    // Update snake game if active
+    if (snakeActive) {
+        updateSnakeGame();
+        return;
+    }
+
     // Don't update gameplay until the player starts the game
     if (!gameStarted) return;
 
@@ -295,18 +302,30 @@ function projectileHitEnemy(bullet, enemy) {
     try {
         if (bullet && bullet.destroy) bullet.destroy();
         if (!enemy) return;
+        
         enemy.hp -= projectileDamage;
+        console.log('Enemy hit, remaining HP:', enemy.hp);
+        
         if (enemy.hp <= 0) {
-            dropCoin(this, enemy.x, enemy.y);
+            console.log('Enemy died, dropping coin');
+            dropCoin(currentScene, enemy.x, enemy.y);
             enemy.destroy();
+            
             if (enemies.countActive() === 0) {
+                console.log('All enemies defeated, spawning next wave');
                 wave++;
-                waveText.setText("Wave: " + wave);
-                spawnWave(this);
+                if (waveText) {
+                    waveText.setText("Wave: " + wave);
+                } else {
+                    console.warn('waveText is not available');
+                }
+                if (currentScene) {
+                    spawnWave(currentScene);
+                }
             }
         }
     } catch (e) {
-        console.warn('Error in projectileHitEnemy', e);
+        console.error('Error in projectileHitEnemy', e);
     }
 }
 
@@ -357,22 +376,47 @@ function collectCoin(player, coin) {
     if (coin.getData && coin.getData('collected')) return;
     if (coin.setData) coin.setData('collected', true);
     coinsCollected++;
-    coinText.setText("Coins: " + coinsCollected);
+    if (coinText) {
+        coinText.setText("Coins: " + coinsCollected);
+    } else {
+        console.warn('coinText is not available to update');
+    }
     if (coin.body) coin.body.enable = false;
     coin.destroy();
 }
 
 function playerHit(player, enemy) {
+    console.log('playerHit called, player HP:', playerEntity ? playerEntity.hp : 'playerEntity null');
+    
+    if (!playerEntity) {
+        console.error('playerEntity is null!');
+        return;
+    }
+    
     playerEntity.takeDamage(5);
-    playerHPText.setText('Player HP: ' + playerEntity.hp);
-    enemy.destroy();
+    console.log('Player took 5 damage, new HP:', playerEntity.hp);
+    
+    if (playerHPText) {
+        playerHPText.setText('Player HP: ' + playerEntity.hp);
+    } else {
+        console.error('playerHPText is null or invalid!');
+    }
+    
+    if (enemy && enemy.destroy) {
+        enemy.destroy();
+    }
 
     if (playerEntity.hp <= 0) {
-        showGameOverPrompt(currentScene, { score: coinsCollected, wave: wave });
+        console.log('Player HP <= 0, ending game');
+        if (currentScene) {
+            showGameOverPrompt(currentScene, { score: coinsCollected, wave: wave });
+        }
     }
 }
 
 function hitBase(objA, objB) {
+    console.log('hitBase called');
+    
     // Determine which object is the enemy and which is the base hit zone
     let enemyObj = objA;
     let baseObj = objB;
@@ -390,14 +434,28 @@ function hitBase(objA, objB) {
         baseObj = objB;
     }
 
+    if (!baseEntity) {
+        console.error('baseEntity is null!');
+        return;
+    }
+    
     baseEntity.takeDamage(10);
-    baseHPText.setText('Base HP: ' + baseEntity.hp);
+    console.log('Base took 10 damage, new HP:', baseEntity.hp);
+    
+    if (baseHPText) {
+        baseHPText.setText('Base HP: ' + baseEntity.hp);
+    } else {
+        console.error('baseHPText is null or invalid!');
+    }
 
     if (enemyObj && enemyObj !== baseObj && enemyObj.destroy) {
         enemyObj.destroy();
     }
 
     if (baseEntity.hp <= 0) {
-        showGameOverPrompt(currentScene, { score: coinsCollected, wave: wave });
+        console.log('Base HP <= 0, ending game');
+        if (currentScene) {
+            showGameOverPrompt(currentScene, { score: coinsCollected, wave: wave });
+        }
     }
 }
